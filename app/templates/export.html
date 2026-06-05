@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}エクスポート — AI OCR{% endblock %}
+{% block page_title %}エクスポート{% endblock %}
+
+{% block content %}
+{% if request.query_params.get('error') == 'no_selection' %}
+<div class="alert alert-error">エクスポートする帳票を選択してください。</div>
+{% elif request.query_params.get('error') == 'no_confirmed' %}
+<div class="alert alert-error">確定済みの帳票がありません。先に確認・確定を行ってください。</div>
+{% endif %}
+
+<div class="card">
+  <h3>確定済みデータのエクスポート</h3>
+  <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1.5rem;">
+    確定済みの帳票のみエクスポートできます。対象を選択して形式を指定してください。
+  </p>
+
+  {% if documents %}
+  <form action="/export" method="post">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="select-all" checked></th>
+          <th>ファイル名</th>
+          <th>帳票種別</th>
+          <th>日付</th>
+          <th>担当者</th>
+          <th>アップロード日時</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ doc.id }}" class="export-check" checked></td>
+          <td>{{ doc.file_name }}</td>
+          <td>{{ doc.document_type or '—' }}</td>
+          <td>{{ doc.date or '—' }}</td>
+          <td>{{ doc.person_in_charge or '—' }}</td>
+          <td>{{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;">
+      <label style="font-weight:500;">出力形式:</label>
+      <label><input type="radio" name="export_type" value="csv" checked> CSV</label>
+      <label><input type="radio" name="export_type" value="excel"> Excel (.xlsx)</label>
+      <button type="submit" class="btn btn-primary">エクスポート実行</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">📥</div>
+    <p>確定済みの帳票がありません</p>
+    <a href="/pending" class="btn btn-primary" style="margin-top:1rem;">確認待ちを確認する</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if export_logs %}
+<div class="card">
+  <h3>エクスポート履歴</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>日時</th>
+        <th>形式</th>
+        <th>件数</th>
+        <th>ファイル</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in export_logs %}
+      <tr>
+        <td>{{ log.exported_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ log.export_type | upper }}</td>
+        <td>{{ log.document_count }}件</td>
+        <td>{{ log.file_path.split('/')[-1] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const selectAll = document.getElementById('select-all');
+if (selectAll) {
+  selectAll.addEventListener('change', () => {
+    document.querySelectorAll('.export-check').forEach(cb => cb.checked = selectAll.checked);
+  });
+}
+</script>
+{% endblock %}

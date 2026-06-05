@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}設定 — AI OCR{% endblock %}
+{% block page_title %}設定{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <h3>OCRエンジン設定</h3>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+      現在使用中: <strong>ダミーOCR（dummy_ocr_v1）</strong>
+    </p>
+    <table>
+      <tr><th>エンジン</th><th>状態</th><th>説明</th></tr>
+      <tr><td>dummy</td><td><span class="badge badge-confirmed">使用中</span></td><td>デモ用ダミーOCR</td></tr>
+      <tr><td>tesseract</td><td><span class="badge badge-pending">未実装</span></td><td>Tesseract OCR（ローカル）</td></tr>
+      <tr><td>google_vision</td><td><span class="badge badge-pending">未実装</span></td><td>Google Vision API</td></tr>
+      <tr><td>openai_vision</td><td><span class="badge badge-pending">未実装</span></td><td>OpenAI Vision API</td></tr>
+    </table>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">
+      差し替え方法: <code>app/services/ocr.py</code> の <code>get_ocr_engine()</code> を変更
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>AI抽出設定</h3>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+      現在使用中: <strong>ダミーAI抽出（キーワードマッチング）</strong>
+    </p>
+    <table>
+      <tr><th>プロバイダ</th><th>状態</th><th>説明</th></tr>
+      <tr><td>dummy</td><td><span class="badge badge-confirmed">使用中</span></td><td>デモ用キーワード抽出</td></tr>
+      <tr><td>openai</td><td><span class="badge badge-pending">未実装</span></td><td>OpenAI API（GPT）</td></tr>
+      <tr><td>anthropic</td><td><span class="badge badge-pending">未実装</span></td><td>Anthropic API（Claude）</td></tr>
+      <tr><td>local_llm</td><td><span class="badge badge-pending">未実装</span></td><td>ローカルLLM</td></tr>
+    </table>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">
+      差し替え方法: <code>app/services/ai_extractor.py</code> の <code>get_ai_extractor()</code> を変更
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <h3>対応帳票種別</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+    {% for t in document_types %}
+    <span class="badge badge-pending">{{ t }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h3>抽出項目一覧</h3>
+  <table>
+    <thead><tr><th>フィールドキー</th><th>表示名</th></tr></thead>
+    <tbody>
+      {% for key, label in extractable_fields %}
+      <tr><td><code>{{ key }}</code></td><td>{{ label }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>将来の連携（改善活動管理システム）</h3>
+  <div class="flow-diagram">
+    <span class="flow-step">帳票読み取り</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">異常内容抽出</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">問題登録</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">CAPA管理</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">効果確認</span>
+  </div>
+  <p style="color:var(--text-muted);font-size:0.875rem;">
+    異常報告書・ヒヤリハット報告書から抽出した異常内容を、改善活動管理システムへ連携する機能は将来実装予定です。
+    設計上、<code>abnormal_content</code> フィールドと <code>action</code> フィールドが連携の起点となります。
+  </p>
+</div>
+{% endblock %}

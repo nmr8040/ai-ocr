@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}確認待ち — AI OCR{% endblock %}
+{% block page_title %}確認待ち{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  AIが抽出した項目は自動確定されません。必ず内容を確認・修正してから確定してください。
+</div>
+
+<div class="card">
+  <h3>確認待ちの帳票（{{ documents|length }}件）</h3>
+  {% if documents %}
+  <table>
+    <thead>
+      <tr>
+        <th>アップロード日時</th>
+        <th>ファイル名</th>
+        <th>帳票種別</th>
+        <th>日付</th>
+        <th>担当者</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in documents %}
+      <tr>
+        <td>{{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ doc.file_name }}</td>
+        <td>{{ doc.document_type or '—' }}</td>
+        <td>{{ doc.date or '—' }}</td>
+        <td>{{ doc.person_in_charge or '—' }}</td>
+        <td>
+          <a href="/review/{{ doc.id }}" class="btn btn-sm btn-primary">確認・修正する</a>
+          <a href="/documents/{{ doc.id }}" class="btn btn-sm btn-secondary">詳細</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">✅</div>
+    <p>確認待ちの帳票はありません</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

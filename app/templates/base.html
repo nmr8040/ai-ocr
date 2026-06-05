@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI OCR 帳票読み取り{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>AI OCR</h1>
+        <p>帳票読み取りツール</p>
+      </div>
+      <nav>
+        <a href="/" class="{% if active_page == 'dashboard' %}active{% endif %}">
+          <span class="icon">📊</span> ダッシュボード
+        </a>
+        <a href="/upload" class="{% if active_page == 'upload' %}active{% endif %}">
+          <span class="icon">📤</span> アップロード
+        </a>
+        <a href="/history" class="{% if active_page == 'history' %}active{% endif %}">
+          <span class="icon">📋</span> 読み取り履歴
+        </a>
+        <a href="/pending" class="{% if active_page == 'pending' %}active{% endif %}">
+          <span class="icon">✏️</span> 確認待ち
+        </a>
+        <a href="/export" class="{% if active_page == 'export' %}active{% endif %}">
+          <span class="icon">📥</span> エクスポート
+        </a>
+        <a href="/settings" class="{% if active_page == 'settings' %}active{% endif %}">
+          <span class="icon">⚙️</span> 設定
+        </a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <h2>{% block page_title %}{% endblock %}</h2>
+        {% block topbar_actions %}{% endblock %}
+      </div>
+      <div class="content">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

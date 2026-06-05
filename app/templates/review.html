@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}確認・修正 — AI OCR{% endblock %}
+{% block page_title %}確認・修正{% endblock %}
+
+{% block topbar_actions %}
+<span class="badge badge-{{ doc.status }}">{{ status_label }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="flow-diagram">
+  <span class="flow-step done">アップロード</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step done">OCR読み取り</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step done">AI項目抽出</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step active">人が確認・修正</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">確定保存</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">Excel/CSV出力</span>
+</div>
+
+<div class="alert alert-info">
+  <strong>重要:</strong> AI/OCRの結果は100%正確ではありません。下記の抽出結果を確認・修正してから確定してください。
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>ファイルプレビュー — {{ doc.file_name }}</h3>
+    <div class="preview-box">
+      {% if doc.file_type in ['jpg', 'jpeg', 'png'] %}
+      <img src="/documents/{{ doc.id }}/file" alt="プレビュー">
+      {% elif doc.file_type == 'pdf' %}
+      <iframe src="/documents/{{ doc.id }}/file"></iframe>
+      {% else %}
+      <p>プレビュー非対応</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>OCR全文</h3>
+    <div class="ocr-text">{{ ocr_text }}</div>
+  </div>
+</div>
+
+<form action="/review/{{ doc.id }}/confirm" method="post">
+  <div class="card">
+    <h3>AI抽出結果 — 確認・修正</h3>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1.5rem;">
+      各項目を確認し、必要に応じて修正してください。修正後「確定保存」ボタンを押してください。
+    </p>
+
+    <div class="grid-2">
+      {% for key, label in fields %}
+      <div class="form-group">
+        <label for="{{ key }}">{{ label }}</label>
+        {% if key == 'document_type' %}
+        <select name="{{ key }}" id="{{ key }}" class="form-control">
+          {% for t in document_types %}
+          <option value="{{ t }}" {% if extracted.get(key, '') == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+        {% elif key in ['abnormal_content', 'note', 'action'] %}
+        <textarea name="{{ key }}" id="{{ key }}" class="form-control" rows="3">{{ extracted.get(key, '') }}</textarea>
+        {% else %}
+        <input type="text" name="{{ key }}" id="{{ key }}" class="form-control" value="{{ extracted.get(key, '') }}">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group" style="margin-top:1rem;">
+      <label for="confirmed_by">確定者名</label>
+      <input type="text" name="confirmed_by" id="confirmed_by" class="form-control" value="ユーザー" style="max-width:300px;">
+    </div>
+
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;">
+      <button type="submit" class="btn btn-success" onclick="return confirm('内容を確定保存しますか？')">
+        ✓ 確定保存
+      </button>
+      <a href="/documents/{{ doc.id }}" class="btn btn-secondary">詳細画面へ</a>
+      <a href="/pending" class="btn btn-secondary">確認待ち一覧へ</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
