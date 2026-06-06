@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,6 +10,13 @@ DATABASE_URL = f"sqlite:///{DATA_DIR / 'ai_ocr.db'}"
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf"}
 MAX_UPLOAD_SIZE_MB = 20
+
+# OCR / AI 設定（環境変数で切り替え）
+OCR_ENGINE = os.getenv("OCR_ENGINE", "tesseract")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "auto")  # auto / openai / rule
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+TESSERACT_LANG = os.getenv("TESSERACT_LANG", "jpn+eng")
 
 DOCUMENT_TYPES = [
     "点検表",
@@ -41,3 +49,9 @@ EXTRACTABLE_FIELDS = [
     ("note", "備考"),
     ("action", "対応内容"),
 ]
+
+
+def get_effective_ai_provider() -> str:
+    if AI_PROVIDER == "auto":
+        return "openai" if OPENAI_API_KEY else "rule"
+    return AI_PROVIDER

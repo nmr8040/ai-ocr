@@ -20,8 +20,8 @@
 | 機能 | 説明 |
 |------|------|
 | アップロード | JPG / PNG / PDF に対応 |
-| OCR | ダミー実装（差し替え可能設計） |
-| AI項目抽出 | ダミー実装（差し替え可能設計） |
+| OCR | Tesseract OCR（日本語+英語、画像/PDF対応） |
+| AI項目抽出 | OpenAI API またはルールベース抽出 |
 | 確認・修正 | 抽出結果を人が編集して確定 |
 | 履歴管理 | アップロード済み帳票の一覧・詳細 |
 | エクスポート | 確定済みデータを CSV / Excel で出力 |
@@ -40,11 +40,23 @@ docker compose up --build
 ### ローカル（Python）
 
 ```bash
+# macOS: Tesseract と日本語言語パックをインストール
+brew install tesseract tesseract-lang poppler
+
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### Render デプロイ
+
+1. GitHub リポジトリ `nmr8040/ai-ocr` を接続
+2. Language: **Docker**
+3. 環境変数（任意）:
+   - `OPENAI_API_KEY` — OpenAI による高精度抽出（未設定時はルールベース）
+   - `AI_PROVIDER` — `auto`（デフォルト）/ `openai` / `rule`
+   - `OCR_ENGINE` — `tesseract`（デフォルト）
 
 ## 使い方
 
@@ -76,32 +88,39 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - **エクスポート** — CSV/Excel 出力
 - **設定** — OCR/AI エンジン情報
 
-## OCR / AI の差し替え
+## OCR / AI 設定
 
-### OCRエンジン
+### 環境変数
 
-`app/services/ocr.py` で差し替え可能です。
+| 変数 | デフォルト | 説明 |
+|------|-----------|------|
+| `OCR_ENGINE` | tesseract | OCRエンジン |
+| `AI_PROVIDER` | auto | auto / openai / rule |
+| `OPENAI_API_KEY` | — | OpenAI APIキー |
+| `OPENAI_MODEL` | gpt-4o-mini | 使用モデル |
+| `TESSERACT_LANG` | jpn+eng | OCR言語 |
+
+### OCR
+
+`app/services/ocr.py` で Tesseract OCR を実行します。
 
 ```python
-# 使用例（将来）
 from app.services.ocr import run_ocr
 raw_text, engine = run_ocr(file_path, engine_name="tesseract")
 ```
 
-対応予定: Tesseract / Google Vision / OpenAI Vision / ローカルOCR
+- 画像: Tesseract で直接 OCR
+- PDF: テキスト埋め込みPDFは pypdf で抽出、スキャンPDFはページ画像化して OCR
 
 ### AI抽出
 
-`app/services/ai_extractor.py` で差し替え可能です。
+`app/services/ai_extractor.py` で項目を抽出します。
 
 ```python
-# 使用例（将来）
 from app.services.ai_extractor import extract_fields_with_ai, normalize_extracted_fields
-fields = extract_fields_with_ai(raw_text, provider="openai")
+fields = extract_fields_with_ai(raw_text)  # OPENAI_API_KEY 設定時は OpenAI を使用
 normalized = normalize_extracted_fields(fields)
 ```
-
-対応予定: OpenAI / Anthropic / ローカルLLM
 
 ## データベース
 

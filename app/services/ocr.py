@@ -1,14 +1,9 @@
-"""OCRサービス — エンジン差し替え可能な設計。
-
-将来的に以下に差し替え可能:
-- Tesseract OCR
-- Google Vision API
-- OpenAI Vision
-- ローカルOCR
-"""
+"""OCRサービス — エンジン差し替え可能な設計。"""
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+from app.config import TESSERACT_LANG
 
 
 class OcrEngine(ABC):
@@ -18,57 +13,93 @@ class OcrEngine(ABC):
         ...
 
 
-class DummyOcrEngine(OcrEngine):
-    """デモ用ダミーOCR。ファイル名からサンプルテキストを生成する。"""
-
-    def run_ocr(self, file_path: str) -> tuple[str, str]:
-        file_name = Path(file_path).stem
-        suffix = Path(file_path).suffix.lower()
-
-        sample_text = f"""【帳票読み取り結果 — ダミーOCR】
-ファイル名: {file_name}{suffix}
-
-点検表
-日付: 2026-06-02
-担当者: 山田太郎
-部署: 製造1課
-会社名: 株式会社サンプル
-
-点検項目:
-1. 温度センサー — 異常（基準値超過）
-2. 圧力計 — 正常
-3. 流量計 — 正常
-
-異常内容: 温度が基準値を超過（設定値: 80℃ / 実測値: 92℃）
-備考: 要確認。再点検を実施予定。
-対応内容: 担当者へ確認、冷却装置の点検を実施
-
-数量: 1
-金額: —
-
-※ これはダミーOCR結果です。本番では Tesseract / Google Vision / OpenAI Vision 等に差し替えてください。
-"""
-        return sample_text, "dummy_ocr_v1"
-
-
 class TesseractOcrEngine(OcrEngine):
-    """Tesseract OCR（将来実装用スタブ）。"""
+    """Tesseract OCR — 画像・PDFから実際に文字を読み取る。"""
 
     def run_ocr(self, file_path: str) -> tuple[str, str]:
-        raise NotImplementedError(
-            "Tesseract OCR は未実装です。pytesseract をインストールし、実装を追加してください。"
-        )
+        import pytesseract
+        from PIL import Image, ImageEnhance, ImageFilter
+
+        path = Path(file_path)
+        suffix = path.suffix.lower()
+
+        if suffix == ".pdf":
+            text = self._ocr_pdf(path, pytesseract, Image, ImageEnhance, ImageFilter)
+        elif suffix in {".jpg", ".jpeg", ".png"}:
+            text = self._ocr_image(path, pytesseract, Image, ImageEnhance, ImageFilter)
+        else:
+            raise ValueError(f"対応していないファイル形式です: {suffix}")
+
+        cleaned = text.strip()
+        if not cleaned:
+            raise ValueError(
+                "OCRでテキストを読み取れませんでした。画像の解像度や文字の鮮明さを確認してください。"
+            )
+        return cleaned, f"tesseract ({TESSERACT_LANG})"
+
+    def _preprocess_image(self, img, ImageEnhance, ImageFilter):
+        img = img.convert("L")
+        img = ImageEnhance.Contrast(img).enhance(1.8)
+        img = img.filter(ImageFilter.SHARPEN)
+        return img
+
+    def _ocr_image(self, path, pytesseract, Image, ImageEnhance, ImageFilter) -> str:
+        img = Image.open(path)
+        img = self._preprocess_image(img, ImageEnhance, ImageFilter)
+        return pytesseract.image_to_string(img, lang=TESSERACT_LANG)
+
+    def _ocr_pdf(self, path, pytesseract, Image, ImageEnhance, ImageFilter) -> str:
+        # テキスト埋め込みPDFは pypdf で直接抽出（精度が高い）
+        embedded = self._extract_embedded_pdf_text(path)
+        if embedded and len(embedded.strip()) >= 10:
+            return embedded
+
+        # スキャンPDFはページ画像化して OCR
+        from pdf2image import convert_from_path
+
+        pages = convert_from_path(str(path), dpi=300)
+        texts = []
+        for page in pages:
+            processed = self._preprocess_image(page, ImageEnhance, ImageFilter)
+            page_text = pytesseract.image_to_string(processed, lang=TESSERACT_LANG)
+            if page_text.strip():
+                texts.append(page_text.strip())
+        return "\n\n".join(texts)
+
+    def _extract_embedded_pdf_text(self, path: Path) -> str:
+        try:
+            from pypdf import PdfReader
+
+            reader = PdfReader(str(path))
+            parts = []
+            for page in reader.pages:
+                text = page.extract_text()
+                if text:
+                    parts.append(text.strip())
+            return "\n".join(parts)
+        except Exception:
+            return ""
 
 
-def get_ocr_engine(engine_name: str = "dummy") -> OcrEngine:
-    engines: dict[str, OcrEngine] = {
-        "dummy": DummyOcrEngine(),
-        "tesseract": TesseractOcrEngine(),
-    }
-    return engines.get(engine_name, DummyOcrEngine())
+def get_ocr_engine(engine_name: str = "tesseract") -> OcrEngine:
+    if engine_name == "tesseract":
+        return TesseractOcrEngine()
+    raise ValueError(f"未対応のOCRエンジンです: {engine_name}")
 
 
-def run_ocr(file_path: str, engine_name: str = "dummy") -> tuple[str, str]:
+def run_ocr(file_path: str, engine_name: str = "tesseract") -> tuple[str, str]:
     """OCRを実行する統一エントリポイント。"""
     engine = get_ocr_engine(engine_name)
     return engine.run_ocr(file_path)
+
+
+def is_tesseract_available() -> bool:
+    try:
+        import pytesseract
+        from PIL import Image
+
+        pytesseract.get_tesseract_version()
+        Image.new("RGB", (1, 1))
+        return True
+    except Exception:
+        return False

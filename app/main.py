@@ -15,12 +15,21 @@ from app.config import (
     EXTRACTABLE_FIELDS,
     EXPORT_DIR,
     MAX_UPLOAD_SIZE_MB,
+    OCR_ENGINE,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
     STATUSES,
     UPLOAD_DIR,
+    get_effective_ai_provider,
 )
 from app.database import get_db, init_db
 from app.models import Document, ExportLog, RevisionLog
-from app.services.ai_extractor import fields_from_json, normalize_extracted_fields
+from app.services.ai_extractor import (
+    fields_from_json,
+    get_ai_provider_label,
+    normalize_extracted_fields,
+)
+from app.services.ocr import is_tesseract_available
 from app.services.document_processor import confirm_document, process_document
 from app.services.export import export_to_csv, export_to_excel
 
@@ -389,6 +398,7 @@ async def export_documents(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request):
+    ai_provider = get_effective_ai_provider()
     return templates.TemplateResponse(
         "settings.html",
         {
@@ -396,6 +406,12 @@ def settings_page(request: Request):
             "active_page": "settings",
             "document_types": DOCUMENT_TYPES,
             "extractable_fields": EXTRACTABLE_FIELDS,
+            "ocr_engine": OCR_ENGINE,
+            "ai_provider": ai_provider,
+            "ai_provider_label": get_ai_provider_label(),
+            "openai_configured": bool(OPENAI_API_KEY),
+            "openai_model": OPENAI_MODEL,
+            "tesseract_available": is_tesseract_available(),
         },
     )
 

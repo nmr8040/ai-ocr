@@ -9,6 +9,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.config import OCR_ENGINE, get_effective_ai_provider
 from app.models import Document, ExtractedField, OcrResult, RevisionLog
 from app.services.ai_extractor import extract_fields_with_ai, fields_to_json
 from app.services.ocr import run_ocr
@@ -30,8 +31,15 @@ def add_revision_log(
     db.add(log)
 
 
-def process_document(db: Session, document: Document, ocr_engine: str = "dummy", ai_provider: str = "dummy"):
+def process_document(
+    db: Session,
+    document: Document,
+    ocr_engine: Optional[str] = None,
+    ai_provider: Optional[str] = None,
+):
     """OCR → AI抽出 → 確認待ちステータスへ遷移する。"""
+    ocr_engine = ocr_engine or OCR_ENGINE
+    ai_provider = ai_provider or get_effective_ai_provider()
     try:
         raw_text, engine_name = run_ocr(document.file_path, engine_name=ocr_engine)
 

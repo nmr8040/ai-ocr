@@ -6,5 +6,11 @@ services:
     branch: main
     healthCheckPath: /
     envVars:
-      - key: PORT
-        value: 8000
+      - key: OCR_ENGINE
+        value: tesseract
+      - key: AI_PROVIDER
+        value: auto
+      - key: TESSERACT_LANG
+        value: jpn+eng
+      - key: OPENAI_API_KEY
+        sync: false

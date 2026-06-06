@@ -5,36 +5,47 @@
 {% block content %}
 <div class="grid-2">
   <div class="card">
-    <h3>OCRエンジン設定</h3>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
-      現在使用中: <strong>ダミーOCR（dummy_ocr_v1）</strong>
-    </p>
+    <h3>OCRエンジン</h3>
     <table>
-      <tr><th>エンジン</th><th>状態</th><th>説明</th></tr>
-      <tr><td>dummy</td><td><span class="badge badge-confirmed">使用中</span></td><td>デモ用ダミーOCR</td></tr>
-      <tr><td>tesseract</td><td><span class="badge badge-pending">未実装</span></td><td>Tesseract OCR（ローカル）</td></tr>
-      <tr><td>google_vision</td><td><span class="badge badge-pending">未実装</span></td><td>Google Vision API</td></tr>
-      <tr><td>openai_vision</td><td><span class="badge badge-pending">未実装</span></td><td>OpenAI Vision API</td></tr>
+      <tr><th>項目</th><th>値</th></tr>
+      <tr><td>使用中エンジン</td><td><strong>{{ ocr_engine }}</strong></td></tr>
+      <tr>
+        <td>Tesseract 状態</td>
+        <td>
+          {% if tesseract_available %}
+          <span class="badge badge-confirmed">利用可能</span>
+          {% else %}
+          <span class="badge badge-error">未インストール</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr><td>対応形式</td><td>JPG / PNG / PDF</td></tr>
+      <tr><td>言語</td><td>日本語 + 英語 (jpn+eng)</td></tr>
     </table>
     <p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">
-      差し替え方法: <code>app/services/ocr.py</code> の <code>get_ocr_engine()</code> を変更
+      環境変数 <code>OCR_ENGINE</code> で切り替え（現在: {{ ocr_engine }}）
     </p>
   </div>
 
   <div class="card">
-    <h3>AI抽出設定</h3>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
-      現在使用中: <strong>ダミーAI抽出（キーワードマッチング）</strong>
-    </p>
+    <h3>AI項目抽出</h3>
     <table>
-      <tr><th>プロバイダ</th><th>状態</th><th>説明</th></tr>
-      <tr><td>dummy</td><td><span class="badge badge-confirmed">使用中</span></td><td>デモ用キーワード抽出</td></tr>
-      <tr><td>openai</td><td><span class="badge badge-pending">未実装</span></td><td>OpenAI API（GPT）</td></tr>
-      <tr><td>anthropic</td><td><span class="badge badge-pending">未実装</span></td><td>Anthropic API（Claude）</td></tr>
-      <tr><td>local_llm</td><td><span class="badge badge-pending">未実装</span></td><td>ローカルLLM</td></tr>
+      <tr><th>項目</th><th>値</th></tr>
+      <tr><td>使用中</td><td><strong>{{ ai_provider_label }}</strong></td></tr>
+      <tr>
+        <td>OpenAI API</td>
+        <td>
+          {% if openai_configured %}
+          <span class="badge badge-confirmed">設定済み ({{ openai_model }})</span>
+          {% else %}
+          <span class="badge badge-pending">未設定 → ルールベース抽出を使用</span>
+          {% endif %}
+        </td>
+      </tr>
     </table>
     <p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">
-      差し替え方法: <code>app/services/ai_extractor.py</code> の <code>get_ai_extractor()</code> を変更
+      環境変数 <code>OPENAI_API_KEY</code> を設定すると OpenAI による高精度抽出が有効になります。<br>
+      <code>AI_PROVIDER=auto</code>（デフォルト）/ <code>openai</code> / <code>rule</code>
     </p>
   </div>
 </div>
@@ -61,21 +72,22 @@
 </div>
 
 <div class="card">
-  <h3>将来の連携（改善活動管理システム）</h3>
+  <h3>業務フロー</h3>
   <div class="flow-diagram">
-    <span class="flow-step">帳票読み取り</span>
+    <span class="flow-step done">アップロード</span>
     <span class="flow-arrow">→</span>
-    <span class="flow-step">異常内容抽出</span>
+    <span class="flow-step done">OCR読み取り</span>
     <span class="flow-arrow">→</span>
-    <span class="flow-step">問題登録</span>
+    <span class="flow-step done">AI項目抽出</span>
     <span class="flow-arrow">→</span>
-    <span class="flow-step">CAPA管理</span>
+    <span class="flow-step active">人が確認・修正</span>
     <span class="flow-arrow">→</span>
-    <span class="flow-step">効果確認</span>
+    <span class="flow-step">確定保存</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Excel/CSV出力</span>
   </div>
   <p style="color:var(--text-muted);font-size:0.875rem;">
-    異常報告書・ヒヤリハット報告書から抽出した異常内容を、改善活動管理システムへ連携する機能は将来実装予定です。
-    設計上、<code>abnormal_content</code> フィールドと <code>action</code> フィールドが連携の起点となります。
+    OCR/AIの結果は自動確定されません。必ず確認・修正してから確定してください。
   </p>
 </div>
 {% endblock %}

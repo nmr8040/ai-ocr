@@ -8,4 +8,4 @@ data/
 uploads/
 exports/
 *.db
-.DS_Store
+samples/
